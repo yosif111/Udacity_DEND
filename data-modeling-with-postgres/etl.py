@@ -4,40 +4,59 @@ import psycopg2
 import pandas as pd
 from sql_queries import *
 
+# Loads data into song and artist tables
+# @parameter cur: cursor
+# @parameter filepath: the target file path to load from
+
 
 def process_song_file(cur, filepath):
     # open song file
-    df = 
+    df = pd.read_json(filepath, lines=True)
 
     # insert song record
-    song_data = 
+    song_data = df[['song_id', 'title',
+                    'artist_id', 'year', 'duration']].values[0]
     cur.execute(song_table_insert, song_data)
-    
+
     # insert artist record
-    artist_data = 
+    artist_data = df[['artist_id', 'artist_name', 'artist_location',
+                      'artist_latitude', 'artist_longitude']].values[0]
     cur.execute(artist_table_insert, artist_data)
 
 
+# Loads data into time, user and songplays tables
+# @parameter cur: cursor
+# @parameter filepath: the target file path to load from
 def process_log_file(cur, filepath):
     # open log file
-    df = 
+    df = pd.read_json(filepath, lines=True)
 
     # filter by NextSong action
-    df = 
+    df = df[df["page"] == "NextSong"]
 
     # convert timestamp column to datetime
-    t = 
-    
+    t = df['ts'] = pd.to_datetime(df['ts'], unit='ms')
+
     # insert time data records
-    time_data = 
-    column_labels = 
-    time_df = 
+    accessor = t.dt
+    time_data = (t, accessor.hour, accessor.day, accessor.week,
+                 accessor.month, accessor.year, accessor.weekday)
+    # column_labels =
+    time_df = pd.DataFrame.from_dict({
+        "timestamp": t,
+        "hour":  accessor.hour,
+        "day": accessor.day,
+        "week": accessor.week,
+        "month": accessor.month,
+        "year": accessor.year,
+        "weekday": accessor.weekday
+    })
 
     for i, row in time_df.iterrows():
         cur.execute(time_table_insert, list(row))
 
     # load user table
-    user_df = 
+    user_df = df[['userId', 'firstName', 'lastName', 'gender', 'level']]
 
     # insert user records
     for i, row in user_df.iterrows():
@@ -45,18 +64,27 @@ def process_log_file(cur, filepath):
 
     # insert songplay records
     for index, row in df.iterrows():
-        
+
         # get songid and artistid from song and artist tables
         cur.execute(song_select, (row.song, row.artist, row.length))
         results = cur.fetchone()
-        
+
         if results:
             songid, artistid = results
         else:
             songid, artistid = None, None
 
+        start_time = row["ts"]
+        user_id = row["userId"]
+        level = row["level"]
+        song_id = songid
+        artist_id = artistid
+        session_id = row['sessionId']
+        location = row['location']
+        user_agent = row['userAgent']
         # insert songplay record
-        songplay_data = 
+        songplay_data = (start_time, user_id, level, song_id, artist_id, session_id,
+                         location, user_agent)
         cur.execute(songplay_table_insert, songplay_data)
 
 
@@ -64,8 +92,8 @@ def process_data(cur, conn, filepath, func):
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
-        files = glob.glob(os.path.join(root,'*.json'))
-        for f in files :
+        files = glob.glob(os.path.join(root, '*.json'))
+        for f in files:
             all_files.append(os.path.abspath(f))
 
     # get total number of files found
@@ -80,7 +108,8 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
-    conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
+    conn = psycopg2.connect(
+        "host=127.0.0.1 dbname=sparkifydb user=postgres password=postgres")
     cur = conn.cursor()
 
     process_data(cur, conn, filepath='data/song_data', func=process_song_file)

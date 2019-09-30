@@ -35,7 +35,7 @@ user_table_create = ("""
 song_table_create = ("""
     CREATE TABLE IF NOT EXISTS songs (
         song_id varchar PRIMARY KEY,
-        artist_id varchar,
+        artist_id varchar NOT NULL,
         title varchar,
         year int,
         duration real
@@ -44,7 +44,7 @@ song_table_create = ("""
 
 artist_table_create = ("""
     CREATE TABLE IF NOT EXISTS artists (
-        artist_id varchar PRIMARY KEY,
+        artist_id varchar NOT NULL,
         name varchar,
         location varchar,
         latitude real,
@@ -75,6 +75,11 @@ songplay_table_insert = ("""
 user_table_insert = ("""
     INSERT INTO users (user_id, first_name, last_name, gender, level)
     VALUES(%s, %s, %s, %s, %s)
+    ON CONFLICT(user_id) DO UPDATE
+    SET first_name = excluded.first_name,
+        last_name = excluded.last_name,
+        gender = excluded.gender,
+        level = excluded.level;
 """)
 
 song_table_insert = ("""
@@ -96,7 +101,7 @@ time_table_insert = ("""
 # FIND SONGS
 
 song_select = ("""
-SELECT songs.song_id, artists.artist_id FROM songs as S
+SELECT s.song_id, artists.artist_id FROM songs as S
 JOIN artists ON S.artist_id = artists.artist_id 
 WHERE S.title = %s AND artists.name= %s AND S.duration= %s
 """)
