@@ -9,8 +9,8 @@ this is my proposed solution.
 ### Design
 I have built the database using the Start schema to achieve fast aggregation and for the simplicity of the reuired queries.
 
-The star schema design as follows: 
-    -Fact table: songplays
+The star schema design as follows:  
+    -Fact table: songplays  
     -Dimensions tables: songs, artists, users, time.
 
 ### Installation
