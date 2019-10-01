@@ -11,12 +11,12 @@ time_table_drop = "drop table if exists time"
 songplay_table_create = ("""
     CREATE TABLE IF NOT EXISTS songplays (
         songplay_id serial PRIMARY KEY,
-        start_time timestamp,
-        user_id int,
-        level varchar,
-        song_id varchar,
-        artist_id varchar,
-        session_id int,
+        start_time timestamp REFERENCES time(start_time),
+        user_id int NOT NULL REFERENCES users(user_id), 
+        level varchar NOT NULL,
+        song_id varchar NOT NULL REFERENCES songs(song_id),
+        artist_id varchar NOT NULL  REFERENCES artists(artist_id),
+        session_id int NOT NULL,
         location varchar,
         user_agent varchar
     );
@@ -25,27 +25,27 @@ songplay_table_create = ("""
 user_table_create = ("""
     CREATE TABLE IF NOT EXISTS users (
         user_id int PRIMARY KEY,
-        first_name varchar,
-        last_name varchar,
-        gender varchar,
-        level varchar
+        first_name varchar NOT NULL,
+        last_name varchar NOT NULL,
+        gender varchar NOT NULL,
+        level varchar NOT NULL
     );
 """)
 
 song_table_create = ("""
     CREATE TABLE IF NOT EXISTS songs (
         song_id varchar PRIMARY KEY,
-        artist_id varchar NOT NULL,
-        title varchar,
-        year int,
-        duration real
+        artist_id varchar  REFERENCES artists(artist_id),
+        title varchar NOT NULL,
+        year int NOT NULL,
+        duration real NOT NULL
     );
 """)
 
 artist_table_create = ("""
     CREATE TABLE IF NOT EXISTS artists (
-        artist_id varchar NOT NULL,
-        name varchar,
+        artist_id varchar PRIMARY KEY,
+        name varchar NOT NULL,
         location varchar,
         latitude real,
         longitude real
@@ -54,7 +54,7 @@ artist_table_create = ("""
 
 time_table_create = ("""
     CREATE TABLE IF NOT EXISTS time (
-        start_time timestamp,
+        start_time timestamp PRIMARY KEY,
         hour smallint,
         day smallint,
         week smallint,
@@ -85,11 +85,21 @@ user_table_insert = ("""
 song_table_insert = ("""
     INSERT INTO songs (song_id, artist_id, title, year, duration)
     VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT(song_id) DO UPDATE
+    SET artist_id = excluded.artist_id,
+        title = excluded.title,
+        year = excluded.year,
+        duration = excluded.duration;
 """)
 
 artist_table_insert = ("""
     INSERT INTO artists (artist_id, name, location, latitude, longitude)
     VALUES (%s, %s, %s, %s, %s)
+    ON CONFLICT(artist_id) DO UPDATE
+    SET name = excluded.name,
+        location = excluded.location,
+        latitude = excluded.latitude,
+        longitude = excluded.longitude;
 """)
 
 
